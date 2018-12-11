@@ -1,10 +1,16 @@
 package telran.ashkelon2018.student.service;
 
+import java.time.LocalDateTime;
 import java.util.Base64;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.jmx.export.annotation.ManagedAttribute;
+import org.springframework.jmx.export.annotation.ManagedResource;
 import org.springframework.stereotype.Service;
 
 import lombok.AllArgsConstructor;
@@ -19,10 +25,28 @@ import telran.ashkelon2018.student.dto.StudentResponseDto;
 import telran.ashkelon2018.student.dto.StudentUnauthorized;
 
 @Service
+@ManagedResource
 public class StudentServiceImpl implements StudentService {
+	
+	private static final Logger logger = 
+			LoggerFactory.getLogger(StudentServiceImpl.class);
+	boolean logEnable;
+	
+	@Value("${time.title}")
+	String title;
 
 	@Autowired
 	StudentRepository studentRepository;
+	
+	@ManagedAttribute
+	public boolean isLogEnable() {
+		return logEnable;
+	}
+
+	@ManagedAttribute
+	public void setLogEnable(boolean logEnable) {
+		this.logEnable = logEnable;
+	}
 
 	@Override
 	public boolean addStudent(StudentDto studentDto) {
@@ -99,12 +123,18 @@ public class StudentServiceImpl implements StudentService {
 
 	@Override
 	public boolean addScore(int id, ScoreDto scoreDto) {
+		LocalDateTime timeStamp = LocalDateTime.now();
+		long t1 = System.currentTimeMillis();
 		Student student = studentRepository
 				.findById(id)
 				.orElseThrow(StudentNotFoundException::new);
 		boolean res = student.addScore(scoreDto.getExamName(),
 				scoreDto.getScore());
 		studentRepository.save(student);
+		long t2 = System.currentTimeMillis();
+		if (logEnable) {
+			logger.info(title+": "+timeStamp+" duration: "+(t2-t1));
+		}
 		return res;
 	}
 
